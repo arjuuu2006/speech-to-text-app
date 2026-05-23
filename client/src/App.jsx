@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import "./App.css";
 
 function App() {
   const [file, setFile] = useState(null);
@@ -90,51 +89,74 @@ function App() {
   };
 
   return (
-    <div className="app">
-      <div className="card">
-        <h1>Speech To Text App</h1>
+    <div className="min-h-screen bg-slate-900 flex justify-center items-center p-5">
+      <div className="w-full max-w-xl bg-slate-800 p-6 rounded-2xl shadow-2xl">
+
+        <h1 className="text-4xl font-bold text-center text-white mb-6">
+          Speech To Text App
+        </h1>
 
         <input
           type="file"
           accept="audio/*"
           onChange={(e) => setFile(e.target.files[0])}
+          className="w-full mb-4 text-white"
         />
 
-        <button onClick={() => handleUpload()}>
+        <button
+          onClick={() => handleUpload()}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold transition duration-300 mb-4"
+        >
           Upload Audio
         </button>
 
         {!recording ? (
-          <button onClick={startRecording}>
+          <button
+            onClick={startRecording}
+            className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-semibold transition duration-300 mb-4"
+          >
             Start Recording
           </button>
         ) : (
-          <button onClick={stopRecording}>
+          <button
+            onClick={stopRecording}
+            className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-semibold transition duration-300 mb-4"
+          >
             Stop Recording
           </button>
         )}
 
-        <div className="transcription-box">
-          <h2>Latest Transcription</h2>
+        <div className="bg-slate-700 p-4 rounded-xl mb-5">
+          <h2 className="text-2xl font-semibold text-white mb-2">
+            Latest Transcription
+          </h2>
 
-          <p>
+          <p className="text-gray-200">
             {transcript || "Your transcription will appear here..."}
           </p>
         </div>
 
-        <div className="history-box">
-          <h2>Previous Transcriptions</h2>
+        <div className="bg-slate-700 p-4 rounded-xl max-h-96 overflow-y-auto">
+          <h2 className="text-2xl font-semibold text-white mb-4">
+            Previous Transcriptions
+          </h2>
 
           {allTranscriptions.map((item) => (
-            <div className="history-item" key={item.id}>
-              <h4>{item.file_name}</h4>
+            <div
+              key={item.id}
+              className="bg-slate-600 p-3 rounded-lg mb-3 hover:scale-[1.02] transition duration-300"
+            >
+              <h4 className="text-blue-300 font-bold mb-1">
+                {item.file_name}
+              </h4>
 
-              <p>{item.transcription}</p>
-
-              <hr />
+              <p className="text-gray-200 text-sm">
+                {item.transcription}
+              </p>
             </div>
           ))}
         </div>
+
       </div>
     </div>
   );
