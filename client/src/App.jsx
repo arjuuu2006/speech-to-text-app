@@ -1,45 +1,75 @@
 import { useEffect, useRef, useState } from "react";
+import "./App.css";
 
 function App() {
   const [file, setFile] = useState(null);
+
   const [transcript, setTranscript] = useState("");
+
   const [allTranscriptions, setAllTranscriptions] = useState([]);
+
+  const [loading, setLoading] = useState(false);
+
+  const [error, setError] = useState("");
+
   const [recording, setRecording] = useState(false);
 
   const mediaRecorderRef = useRef(null);
+
   const audioChunksRef = useRef([]);
 
-  const handleUpload = async (audioFile) => {
-    const selectedFile = audioFile || file;
-
-    if (!selectedFile) {
-      alert("Please choose a file");
+  const handleUpload = async (audioFile = file) => {
+    if (!audioFile) {
+      setError("Please choose an audio file");
       return;
     }
 
+    if (!audioFile.type.startsWith("audio/")) {
+      setError("Only audio files are allowed");
+      return;
+    }
+
+    setError("");
+
+    setLoading(true);
+
     const formData = new FormData();
-    formData.append("audio", selectedFile);
 
-    const response = await fetch("http://localhost:8000/upload", {
-      method: "POST",
-      body: formData,
-    });
+    formData.append("audio", audioFile);
 
-    const data = await response.json();
+    try {
+      const response = await fetch(
+        "http://localhost:8000/upload",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
-    setTranscript(data.transcript);
+      const data = await response.json();
 
-    fetchTranscriptions();
+      setTranscript(data.transcript);
+
+      fetchTranscriptions();
+    } catch (err) {
+      setError("Upload failed");
+    }
+
+    setLoading(false);
   };
 
   const fetchTranscriptions = async () => {
-    const response = await fetch(
-      "http://localhost:8000/transcriptions"
-    );
+    try {
+      const response = await fetch(
+        "http://localhost:8000/transcriptions"
+      );
 
-    const data = await response.json();
+      const data = await response.json();
 
-    setAllTranscriptions(data);
+      setAllTranscriptions(data);
+    } catch (err) {
+      console.log(err);
+    }
   };
 
   useEffect(() => {
@@ -47,39 +77,48 @@ function App() {
   }, []);
 
   const startRecording = async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: true,
-    });
+    try {
+      const stream =
+        await navigator.mediaDevices.getUserMedia({
+          audio: true,
+        });
 
-    const mediaRecorder = new MediaRecorder(stream);
+      const mediaRecorder =
+        new MediaRecorder(stream);
 
-    mediaRecorderRef.current = mediaRecorder;
+      mediaRecorderRef.current = mediaRecorder;
 
-    audioChunksRef.current = [];
+      audioChunksRef.current = [];
 
-    mediaRecorder.ondataavailable = (event) => {
-      audioChunksRef.current.push(event.data);
-    };
+      mediaRecorder.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
 
-    mediaRecorder.onstop = async () => {
-      const audioBlob = new Blob(audioChunksRef.current, {
-        type: "audio/mp3",
-      });
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(
+          audioChunksRef.current,
+          {
+            type: "audio/mp3",
+          }
+        );
 
-      const recordedFile = new File(
-        [audioBlob],
-        "recording.mp3",
-        {
-          type: "audio/mp3",
-        }
-      );
+        const audioFile = new File(
+          [audioBlob],
+          "recording.mp3",
+          {
+            type: "audio/mp3",
+          }
+        );
 
-      await handleUpload(recordedFile);
-    };
+        handleUpload(audioFile);
+      };
 
-    mediaRecorder.start();
+      mediaRecorder.start();
 
-    setRecording(true);
+      setRecording(true);
+    } catch (err) {
+      setError("Microphone access denied");
+    }
   };
 
   const stopRecording = () => {
@@ -89,68 +128,78 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex justify-center items-center p-5">
-      <div className="w-full max-w-xl bg-slate-800 p-6 rounded-2xl shadow-2xl">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-blue-950 flex justify-center items-center p-6">
+      <div className="bg-white/10 backdrop-blur-lg p-8 rounded-3xl shadow-2xl w-full max-w-md border border-white/20">
 
-        <h1 className="text-4xl font-bold text-center text-white mb-6">
+        <h1 className="text-4xl font-bold text-white text-center mb-8">
           Speech To Text App
         </h1>
 
         <input
           type="file"
           accept="audio/*"
-          onChange={(e) => setFile(e.target.files[0])}
-          className="w-full mb-4 text-white"
+          onChange={(e) =>
+            setFile(e.target.files[0])
+          }
+          className="w-full text-white mb-4"
         />
+
+        {error && (
+          <p className="text-red-400 text-sm mb-3">
+            {error}
+          </p>
+        )}
 
         <button
           onClick={() => handleUpload()}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold transition duration-300 mb-4"
+          disabled={loading}
+          className="w-full bg-blue-500 hover:bg-blue-600 transition-all duration-300 text-white py-3 rounded-xl font-semibold mb-4"
         >
-          Upload Audio
+          {loading ? "Uploading..." : "Upload Audio"}
         </button>
 
         {!recording ? (
           <button
             onClick={startRecording}
-            className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-semibold transition duration-300 mb-4"
+            className="w-full bg-green-500 hover:bg-green-600 transition-all duration-300 text-white py-3 rounded-xl font-semibold mb-6"
           >
             Start Recording
           </button>
         ) : (
           <button
             onClick={stopRecording}
-            className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-semibold transition duration-300 mb-4"
+            className="w-full bg-red-500 hover:bg-red-600 transition-all duration-300 text-white py-3 rounded-xl font-semibold mb-6"
           >
             Stop Recording
           </button>
         )}
 
-        <div className="bg-slate-700 p-4 rounded-xl mb-5">
-          <h2 className="text-2xl font-semibold text-white mb-2">
+        <div className="bg-white/10 p-4 rounded-2xl mb-6 border border-white/10">
+          <h2 className="text-xl font-semibold text-white mb-2">
             Latest Transcription
           </h2>
 
-          <p className="text-gray-200">
-            {transcript || "Your transcription will appear here..."}
+          <p className="text-gray-200 text-sm">
+            {transcript ||
+              "Your transcription will appear here..."}
           </p>
         </div>
 
-        <div className="bg-slate-700 p-4 rounded-xl max-h-96 overflow-y-auto">
-          <h2 className="text-2xl font-semibold text-white mb-4">
+        <div className="bg-white/10 p-4 rounded-2xl border border-white/10 max-h-72 overflow-y-auto">
+          <h2 className="text-xl font-semibold text-white mb-4">
             Previous Transcriptions
           </h2>
 
           {allTranscriptions.map((item) => (
             <div
               key={item.id}
-              className="bg-slate-600 p-3 rounded-lg mb-3 hover:scale-[1.02] transition duration-300"
+              className="mb-4 pb-4 border-b border-white/10"
             >
-              <h4 className="text-blue-300 font-bold mb-1">
+              <h4 className="text-blue-300 font-semibold">
                 {item.file_name}
               </h4>
 
-              <p className="text-gray-200 text-sm">
+              <p className="text-gray-200 text-sm mt-1">
                 {item.transcription}
               </p>
             </div>
