@@ -5,6 +5,7 @@ function App() {
   const [file, setFile] = useState(null);
   const [transcript, setTranscript] = useState("");
   const [recording, setRecording] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
@@ -14,6 +15,8 @@ function App() {
     formData.append("audio", audioFile);
 
     try {
+      setLoading(true);
+
       const response = await axios.post(
         "http://localhost:8000/upload",
         formData
@@ -23,6 +26,8 @@ function App() {
     } catch (error) {
       console.log(error);
       alert("Upload failed");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -95,22 +100,25 @@ function App() {
 
           <button
             onClick={uploadSelectedFile}
-            className="bg-blue-500 hover:bg-blue-600 p-3 rounded-lg font-semibold"
+            disabled={loading}
+            className="bg-blue-500 hover:bg-blue-600 p-3 rounded-lg font-semibold disabled:bg-gray-500"
           >
-            Upload Audio
+            {loading ? "Transcribing..." : "Upload Audio"}
           </button>
 
           {!recording ? (
             <button
               onClick={startRecording}
-              className="bg-green-500 hover:bg-green-600 p-3 rounded-lg font-semibold"
+              disabled={loading}
+              className="bg-green-500 hover:bg-green-600 p-3 rounded-lg font-semibold disabled:bg-gray-500"
             >
               Start Recording
             </button>
           ) : (
             <button
               onClick={stopRecording}
-              className="bg-red-500 hover:bg-red-600 p-3 rounded-lg font-semibold"
+              disabled={loading}
+              className="bg-red-500 hover:bg-red-600 p-3 rounded-lg font-semibold disabled:bg-gray-500"
             >
               Stop Recording
             </button>
@@ -129,7 +137,9 @@ function App() {
             </h2>
 
             <p className="text-gray-200">
-              {transcript || "Your transcription will appear here..."}
+              {loading
+                ? "Generating transcription..."
+                : transcript || "Your transcription will appear here..."}
             </p>
 
           </div>
