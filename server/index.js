@@ -20,7 +20,9 @@ const upload = multer({ dest: "uploads/" });
 const deepgram = createClient(process.env.DEEPGRAM_API_KEY);
 
 const supabaseUrl = "https://baumzxhvmqlkooqqfclu.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhdW16eGh2bXFsa29vcXFmY2x1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NDA1MzYsImV4cCI6MjA5NTAxNjUzNn0.3g3XR9GnjtIIiwcCwacJ_VBfr5EDsha_oO6pVTOSC5o";
+
+const supabaseKey =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhdW16eGh2bXFsa29vcXFmY2x1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NDA1MzYsImV4cCI6MjA5NTAxNjUzNn0.3g3XR9GnjtIIiwcCwacJ_VBfr5EDsha_oO6pVTOSC5o";
 
 const supabase = createSupabaseClient(
   supabaseUrl,
@@ -31,35 +33,26 @@ app.post("/upload", upload.single("audio"), async (req, res) => {
   try {
     const audioFile = fs.readFileSync(req.file.path);
 
-    const response = await deepgram.listen.prerecorded.transcribeFile(
-      audioFile,
-      {
-        model: "nova-2",
-        smart_format: true,
-      }
-    );
+    const response =
+      await deepgram.listen.prerecorded.transcribeFile(
+        audioFile,
+        {
+          model: "nova-2",
+          smart_format: true,
+        }
+      );
 
     const transcript =
       response.result.results.channels[0].alternatives[0].transcript;
-await supabase
-  .from("transcriptions")
-  .insert([
-    {
-      file_name: req.file.originalname,
-      transcription: transcript
-    }
-  ]);
-  res.json({
-  transcript: transcript
-});
-    console.log(transcript);
 
-    await supabase.from("transcriptions").insert([
-      {
-        file_name: req.file.originalname,
-        transcription: transcript,
-      },
-    ]);
+    await supabase
+      .from("transcriptions")
+      .insert([
+        {
+          file_name: req.file.originalname,
+          transcription: transcript,
+        },
+      ]);
 
     res.json({
       transcript: transcript,
