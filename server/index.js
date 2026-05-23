@@ -65,6 +65,26 @@ app.post("/upload", upload.single("audio"), async (req, res) => {
     });
   }
 });
+app.get("/transcriptions", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("transcriptions")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      throw error;
+    }
+
+    res.json(data);
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      error: "Failed to fetch transcriptions",
+    });
+  }
+});
 
 app.listen(8000, () => {
   console.log("Server running on port 8000");
