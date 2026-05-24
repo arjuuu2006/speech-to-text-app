@@ -1,43 +1,97 @@
 import { useEffect, useRef, useState } from "react";
 import "./App.css";
+import { supabase } from "./supabaseClient";
 
 function App() {
   const [file, setFile] = useState(null);
-
   const [transcript, setTranscript] = useState("");
-
   const [allTranscriptions, setAllTranscriptions] = useState([]);
-
   const [loading, setLoading] = useState(false);
-
-  const [error, setError] = useState("");
-
   const [recording, setRecording] = useState(false);
 
-  const mediaRecorderRef = useRef(null);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [user, setUser] = useState(null);
 
+  const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
 
-  const handleUpload = async (audioFile = file) => {
-    if (!audioFile) {
-      setError("Please choose an audio file");
+  useEffect(() => {
+    checkUser();
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchTranscriptions();
+    }
+  }, [user]);
+
+  const checkUser = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    setUser(user);
+  };
+
+  const handleSignUp = async () => {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+
+    if (error) {
+      alert(error.message);
+    } else {
+      alert("Signup successful");
+    }
+  };
+
+  const handleLogin = async () => {
+    const { data, error } =
+      await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+    if (error) {
+      alert(error.message);
+    } else {
+      setUser(data.user);
+    }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+  };
+
+  const fetchTranscriptions = async () => {
+    const { data, error } = await supabase
+      .from("transcriptions")
+      .select("*")
+      .order("created_at", {
+        ascending: false,
+      });
+
+    if (!error) {
+      setAllTranscriptions(data);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!file) {
+      alert("Choose audio file");
       return;
     }
-
-    if (!audioFile.type.startsWith("audio/")) {
-      setError("Only audio files are allowed");
-      return;
-    }
-
-    setError("");
-
-    setLoading(true);
-
-    const formData = new FormData();
-
-    formData.append("audio", audioFile);
 
     try {
+      setLoading(true);
+
+      const formData = new FormData();
+
+      formData.append("audio", file);
+
       const response = await fetch(
         "http://localhost:8000/upload",
         {
@@ -48,33 +102,21 @@ function App() {
 
       const data = await response.json();
 
-      setTranscript(data.transcript);
+      if (data.error) {
+        alert(data.error);
+      } else {
+        setTranscript(data.transcript);
 
-      fetchTranscriptions();
-    } catch (err) {
-      setError("Upload failed");
-    }
+        fetchTranscriptions();
+      }
+    } catch (error) {
+      console.log(error);
 
-    setLoading(false);
-  };
-
-  const fetchTranscriptions = async () => {
-    try {
-      const response = await fetch(
-        "http://localhost:8000/transcriptions"
-      );
-
-      const data = await response.json();
-
-      setAllTranscriptions(data);
-    } catch (err) {
-      console.log(err);
+      alert("Upload failed");
+    } finally {
+      setLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchTranscriptions();
-  }, []);
 
   const startRecording = async () => {
     try {
@@ -86,13 +128,17 @@ function App() {
       const mediaRecorder =
         new MediaRecorder(stream);
 
-      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorderRef.current =
+        mediaRecorder;
 
       audioChunksRef.current = [];
 
-      mediaRecorder.ondataavailable = (event) => {
-        audioChunksRef.current.push(event.data);
-      };
+      mediaRecorder.ondataavailable =
+        (event) => {
+          audioChunksRef.current.push(
+            event.data
+          );
+        };
 
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(
@@ -110,14 +156,14 @@ function App() {
           }
         );
 
-        handleUpload(audioFile);
+        uploadRecordedAudio(audioFile);
       };
 
       mediaRecorder.start();
 
       setRecording(true);
-    } catch (err) {
-      setError("Microphone access denied");
+    } catch (error) {
+      console.log(error);
     }
   };
 
@@ -127,86 +173,151 @@ function App() {
     setRecording(false);
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-blue-950 flex justify-center items-center p-6">
-      <div className="bg-white/10 backdrop-blur-lg p-8 rounded-3xl shadow-2xl w-full max-w-md border border-white/20">
+  const uploadRecordedAudio = async (
+    audioFile
+  ) => {
+    try {
+      setLoading(true);
 
-        <h1 className="text-4xl font-bold text-white text-center mb-8">
-          Speech To Text App
-        </h1>
+      const formData = new FormData();
 
-        <input
-          type="file"
-          accept="audio/*"
-          onChange={(e) =>
-            setFile(e.target.files[0])
-          }
-          className="w-full text-white mb-4"
-        />
+      formData.append("audio", audioFile);
 
-        {error && (
-          <p className="text-red-400 text-sm mb-3">
-            {error}
-          </p>
-        )}
+      const response = await fetch(
+        "http://localhost:8000/upload",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
-        <button
-          onClick={() => handleUpload()}
-          disabled={loading}
-          className="w-full bg-blue-500 hover:bg-blue-600 transition-all duration-300 text-white py-3 rounded-xl font-semibold mb-4"
-        >
-          {loading ? "Uploading..." : "Upload Audio"}
-        </button>
+      const data = await response.json();
 
-        {!recording ? (
-          <button
-            onClick={startRecording}
-            className="w-full bg-green-500 hover:bg-green-600 transition-all duration-300 text-white py-3 rounded-xl font-semibold mb-6"
-          >
-            Start Recording
-          </button>
-        ) : (
-          <button
-            onClick={stopRecording}
-            className="w-full bg-red-500 hover:bg-red-600 transition-all duration-300 text-white py-3 rounded-xl font-semibold mb-6"
-          >
-            Stop Recording
-          </button>
-        )}
+      if (data.error) {
+        alert(data.error);
+      } else {
+        setTranscript(data.transcript);
 
-        <div className="bg-white/10 p-4 rounded-2xl mb-6 border border-white/10">
-          <h2 className="text-xl font-semibold text-white mb-2">
-            Latest Transcription
-          </h2>
+        fetchTranscriptions();
+      }
+    } catch (error) {
+      console.log(error);
 
-          <p className="text-gray-200 text-sm">
-            {transcript ||
-              "Your transcription will appear here..."}
-          </p>
+      alert("Recording upload failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!user) {
+    return (
+      <div className="container">
+        <h1>Speech To Text App</h1>
+
+        <div className="auth-box">
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) =>
+              setEmail(e.target.value)
+            }
+          />
+
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) =>
+              setPassword(
+                e.target.value
+              )
+            }
+          />
+
+          <div className="button-group">
+            <button onClick={handleSignUp}>
+              Sign Up
+            </button>
+
+            <button onClick={handleLogin}>
+              Login
+            </button>
+          </div>
         </div>
-
-        <div className="bg-white/10 p-4 rounded-2xl border border-white/10 max-h-72 overflow-y-auto">
-          <h2 className="text-xl font-semibold text-white mb-4">
-            Previous Transcriptions
-          </h2>
-
-          {allTranscriptions.map((item) => (
-            <div
-              key={item.id}
-              className="mb-4 pb-4 border-b border-white/10"
-            >
-              <h4 className="text-blue-300 font-semibold">
-                {item.file_name}
-              </h4>
-
-              <p className="text-gray-200 text-sm mt-1">
-                {item.transcription}
-              </p>
-            </div>
-          ))}
-        </div>
-
       </div>
+    );
+  }
+
+  return (
+    <div className="container">
+      <h1>Speech To Text App</h1>
+
+      <button onClick={handleLogout}>
+        Logout
+      </button>
+
+      <br />
+      <br />
+
+      <input
+        type="file"
+        accept="audio/*"
+        onChange={(e) =>
+          setFile(e.target.files[0])
+        }
+      />
+
+      <br />
+      <br />
+
+      <button
+        onClick={handleUpload}
+        disabled={loading}
+      >
+        {loading
+          ? "Uploading..."
+          : "Upload & Transcribe"}
+      </button>
+
+      <br />
+      <br />
+
+      {!recording ? (
+        <button
+          onClick={startRecording}
+        >
+          Start Recording
+        </button>
+      ) : (
+        <button onClick={stopRecording}>
+          Stop Recording
+        </button>
+      )}
+
+      <br />
+      <br />
+
+      <h2>Current Transcription</h2>
+
+      <p>{transcript}</p>
+
+      <br />
+
+      <h2>Previous Transcriptions</h2>
+
+      {allTranscriptions.map((item) => (
+        <div
+          key={item.id}
+          className="history-item"
+        >
+          <h4>{item.file_name}</h4>
+
+          <p>{item.transcription}</p>
+
+          <hr />
+        </div>
+      ))}
     </div>
   );
 }

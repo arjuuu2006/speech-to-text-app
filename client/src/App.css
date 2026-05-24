@@ -3,58 +3,81 @@ body {
   padding: 0;
   background: #0f172a;
   font-family: Arial, sans-serif;
-}
-
-.app {
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.card {
-  width: 500px;
-  background: rgba(255, 255, 255, 0.1);
-  padding: 30px;
-  border-radius: 20px;
-  backdrop-filter: blur(10px);
   color: white;
-  box-shadow: 0 0 20px rgba(0,0,0,0.3);
+}
+
+.container {
+  max-width: 900px;
+  margin: auto;
+  padding: 30px;
 }
 
 h1 {
   text-align: center;
+  margin-bottom: 30px;
+}
+
+.auth-box {
+  background: #1e293b;
+  padding: 20px;
+  border-radius: 12px;
   margin-bottom: 20px;
 }
 
-input[type="file"] {
+.auth-box input {
   width: 100%;
+  padding: 12px;
+  margin-top: 10px;
   margin-bottom: 15px;
+  border: none;
+  border-radius: 8px;
+  background: #334155;
   color: white;
+  font-size: 15px;
+}
+
+.buttons {
+  display: flex;
+  gap: 15px;
+  margin-top: 15px;
+  margin-bottom: 20px;
 }
 
 button {
-  width: 100%;
-  padding: 12px;
+  flex: 1;
+  padding: 14px;
   border: none;
   border-radius: 10px;
   background: #2563eb;
   color: white;
-  font-size: 16px;
+  font-size: 15px;
+  font-weight: bold;
   cursor: pointer;
-  margin-bottom: 20px;
+  transition: 0.3s;
 }
 
 button:hover {
   background: #1d4ed8;
 }
 
-.transcription-box,
-.history-box {
-  background: rgba(255,255,255,0.1);
-  padding: 15px;
-  border-radius: 10px;
+input[type="file"] {
   margin-top: 20px;
+  margin-bottom: 20px;
+  color: white;
+}
+
+.result {
+  background: #1e293b;
+  padding: 20px;
+  border-radius: 12px;
+  margin-top: 20px;
+}
+
+.history {
+  margin-top: 30px;
+  background: #1e293b;
+  padding: 20px;
+  border-radius: 12px;
 }
 
 .history-item {
@@ -62,11 +85,17 @@ button:hover {
 }
 
 .history-item h4 {
-  margin: 0;
-  color: #93c5fd;
+  margin-bottom: 8px;
+  color: #60a5fa;
 }
 
-.history-item p {
-  margin-top: 5px;
-  font-size: 14px;
+hr {
+  border: 0.5px solid #334155;
+}
+
+.user-section {
+  background: #1e293b;
+  padding: 15px;
+  border-radius: 12px;
+  margin-bottom: 20px;
 }

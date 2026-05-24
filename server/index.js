@@ -19,11 +19,10 @@ const upload = multer({ dest: "uploads/" });
 
 const deepgram = createClient(process.env.DEEPGRAM_API_KEY);
 
-const supabaseUrl = "https://baumzxhvmqlkooqqfclu.supabase.co";
+const supabaseUrl =
+  "https://baumzxhvmqlkooqqfclu.supabase.co";
 
-const supabaseKey =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhdW16eGh2bXFsa29vcXFmY2x1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NDA1MzYsImV4cCI6MjA5NTAxNjUzNn0.3g3XR9GnjtIIiwcCwacJ_VBfr5EDsha_oO6pVTOSC5o";
-
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhdW16eGh2bXFsa29vcXFmY2x1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NDA1MzYsImV4cCI6MjA5NTAxNjUzNn0.3g3XR9GnjtIIiwcCwacJ_VBfr5EDsha_oO6pVTOSC5o";
 const supabase = createSupabaseClient(
   supabaseUrl,
   supabaseKey
@@ -31,21 +30,38 @@ const supabase = createSupabaseClient(
 
 app.post("/upload", upload.single("audio"), async (req, res) => {
   try {
+    if (!req.file) {
+      return res.status(400).json({
+        error: "No file uploaded",
+      });
+    }
+
     const audioFile = fs.readFileSync(req.file.path);
 
-    const response =
+    const { result, error } =
       await deepgram.listen.prerecorded.transcribeFile(
         audioFile,
         {
+          mimetype: "audio/mp3",
           model: "nova-2",
           smart_format: true,
         }
       );
 
-    const transcript =
-      response.result.results.channels[0].alternatives[0].transcript;
+    if (error) {
+      console.log(error);
 
-    await supabase
+      return res.status(500).json({
+        error: "Deepgram failed",
+      });
+    }
+
+    const transcript =
+      result.results.channels[0].alternatives[0].transcript;
+
+    console.log("TRANSCRIPT:", transcript);
+
+    const { error: supabaseError } = await supabase
       .from("transcriptions")
       .insert([
         {
@@ -54,17 +70,26 @@ app.post("/upload", upload.single("audio"), async (req, res) => {
         },
       ]);
 
+    if (supabaseError) {
+      console.log("SUPABASE ERROR:");
+      console.log(supabaseError);
+    }
+
+    fs.unlinkSync(req.file.path);
+
     res.json({
-      transcript: transcript,
+      transcript,
     });
   } catch (error) {
+    console.log("FULL ERROR:");
     console.log(error);
 
     res.status(500).json({
-      error: "Transcription failed",
+      error: "Upload failed",
     });
   }
 });
+
 app.get("/transcriptions", async (req, res) => {
   try {
     const { data, error } = await supabase
