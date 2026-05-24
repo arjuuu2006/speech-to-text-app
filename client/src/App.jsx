@@ -93,13 +93,12 @@ function App() {
       formData.append("audio", file);
 
       const response = await fetch(
-        "http://localhost:8000/upload",
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
-
+  "https://speech-to-text-app-n670.onrender.com/upload",
+  {
+    method: "POST",
+    body: formData,
+  }
+);
       const data = await response.json();
 
       if (data.error) {
@@ -183,13 +182,13 @@ function App() {
 
       formData.append("audio", audioFile);
 
-      const response = await fetch(
-        "http://localhost:8000/upload",
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
+const response = await fetch(
+  "https://speech-to-text-app-n670.onrender.com/upload",
+  {
+    method: "POST",
+    body: formData,
+  }
+);
 
       const data = await response.json();
 
