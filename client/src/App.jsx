@@ -3,6 +3,8 @@ import "./App.css";
 import { supabase } from "./supabaseClient";
 
 function App() {
+  const [isLogin, setIsLogin] = useState(true);
+
   const [file, setFile] = useState(null);
   const [transcript, setTranscript] = useState("");
   const [allTranscriptions, setAllTranscriptions] =
@@ -15,6 +17,7 @@ function App() {
   const [email, setEmail] = useState("");
   const [password, setPassword] =
     useState("");
+
   const [user, setUser] = useState(null);
 
   const mediaRecorderRef = useRef(null);
@@ -71,31 +74,35 @@ function App() {
 
     setUser(null);
 
-    setAllTranscriptions([]);
-
     setTranscript("");
+
+    setAllTranscriptions([]);
   };
 
-  const fetchTranscriptions = async () => {
-    if (!user) return;
+  const fetchTranscriptions =
+    async () => {
+      if (!user) return;
 
-    try {
-      const response = await fetch(
-        `https://speech-to-text-app-n670.onrender.com/transcriptions/${user.id}`
-      );
+      try {
+        const response =
+          await fetch(
+            `https://speech-to-text-app-n670.onrender.com/transcriptions/${user.id}`
+          );
 
-      const data = await response.json();
+        const data =
+          await response.json();
 
-      setAllTranscriptions(data);
-    } catch (error) {
-      console.log(error);
-    }
-  };
+        setAllTranscriptions(data);
+      } catch (error) {
+        console.log(error);
+      }
+    };
 
   const clearHistory = async () => {
-    const confirmDelete = window.confirm(
-      "Clear all transcription history?"
-    );
+    const confirmDelete =
+      window.confirm(
+        "Clear all history?"
+      );
 
     if (!confirmDelete) return;
 
@@ -122,22 +129,27 @@ function App() {
     try {
       setLoading(true);
 
-      const formData = new FormData();
+      const formData =
+        new FormData();
 
-      formData.append("audio", file);
+      formData.append(
+        "audio",
+        file
+      );
 
       formData.append(
         "user_id",
         user.id
       );
 
-      const response = await fetch(
-        "https://speech-to-text-app-n670.onrender.com/upload",
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
+      const response =
+        await fetch(
+          "https://speech-to-text-app-n670.onrender.com/upload",
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
 
       const data =
         await response.json();
@@ -149,9 +161,7 @@ function App() {
           data.transcript
         );
 
-        setTimeout(() => {
-          fetchTranscriptions();
-        }, 1000);
+        fetchTranscriptions();
       }
     } catch (error) {
       console.log(error);
@@ -162,8 +172,8 @@ function App() {
     }
   };
 
-  const startRecording = async () => {
-    try {
+  const startRecording =
+    async () => {
       const stream =
         await navigator.mediaDevices.getUserMedia(
           {
@@ -213,10 +223,7 @@ function App() {
       mediaRecorder.start();
 
       setRecording(true);
-    } catch (error) {
-      console.log(error);
-    }
-  };
+    };
 
   const stopRecording = () => {
     mediaRecorderRef.current.stop();
@@ -254,23 +261,13 @@ function App() {
         const data =
           await response.json();
 
-        if (data.error) {
-          alert(data.error);
-        } else {
-          setTranscript(
-            data.transcript
-          );
+        setTranscript(
+          data.transcript
+        );
 
-          setTimeout(() => {
-            fetchTranscriptions();
-          }, 1000);
-        }
+        fetchTranscriptions();
       } catch (error) {
         console.log(error);
-
-        alert(
-          "Recording upload failed"
-        );
       } finally {
         setLoading(false);
       }
@@ -278,20 +275,88 @@ function App() {
 
   if (!user) {
     return (
-      <div className="container">
-        <div className="auth-box">
-          <h1>
-            🎤 Speech To Text App
+      <div className="auth-page">
+        <div className="left-section">
+          <h1 className="logo">
+            Transcripto
           </h1>
 
-          <p className="subtitle">
-            Convert your voice into
-            text instantly
+          <p className="tagline">
+            Speak Naturally.
+            Transcribe Instantly.
+          </p>
+
+          <div className="feature-card">
+            <h3>
+              🎤 AI Voice
+              Transcription
+            </h3>
+
+            <p>
+              Convert speech into
+              accurate text using
+              Deepgram AI.
+            </p>
+          </div>
+
+          <div className="feature-card">
+            <h3>
+              🔒 Secure User
+              Access
+            </h3>
+
+            <p>
+              Keep transcription
+              history private and
+              secure.
+            </p>
+          </div>
+        </div>
+
+        <div className="auth-card">
+          <div className="toggle-buttons">
+            <button
+              className={
+                isLogin
+                  ? "active"
+                  : ""
+              }
+              onClick={() =>
+                setIsLogin(true)
+              }
+            >
+              Login
+            </button>
+
+            <button
+              className={
+                !isLogin
+                  ? "active"
+                  : ""
+              }
+              onClick={() =>
+                setIsLogin(false)
+              }
+            >
+              Sign Up
+            </button>
+          </div>
+
+          <h2>
+            {isLogin
+              ? "Welcome Back"
+              : "Create Account"}
+          </h2>
+
+          <p>
+            {isLogin
+              ? "Login to continue using Transcripto."
+              : "Create your account."}
           </p>
 
           <input
             type="email"
-            placeholder="Enter Email"
+            placeholder="Enter email"
             value={email}
             onChange={(e) =>
               setEmail(
@@ -302,7 +367,7 @@ function App() {
 
           <input
             type="password"
-            placeholder="Enter Password"
+            placeholder="Enter password"
             value={password}
             onChange={(e) =>
               setPassword(
@@ -311,117 +376,120 @@ function App() {
             }
           />
 
-          <div className="button-group">
-            <button
-              onClick={
-                handleSignUp
-              }
-            >
-              Sign Up
-            </button>
-
-            <button
-              onClick={
-                handleLogin
-              }
-            >
-              Login
-            </button>
-          </div>
+          <button
+            className="main-btn"
+            onClick={
+              isLogin
+                ? handleLogin
+                : handleSignUp
+            }
+          >
+            {isLogin
+              ? "Login"
+              : "Create Account"}
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container">
-      <div className="main-box">
-        <div className="top-bar">
-          <h1>
-            🎤 Speech To Text App
+    <div className="dashboard">
+      <div className="dashboard-top">
+        <div>
+          <h1 className="logo">
+            Transcripto
           </h1>
 
-          <button
-            onClick={
-              handleLogout
-            }
-          >
-            Logout
-          </button>
+          <p className="tagline">
+            Speak Naturally.
+            Transcribe Instantly.
+          </p>
         </div>
 
-        <p className="subtitle">
-          Convert your voice into
-          text instantly
-        </p>
+        <button
+          onClick={handleLogout}
+        >
+          Logout
+        </button>
+      </div>
 
-        <input
-          type="file"
-          accept="audio/*"
-          onChange={(e) =>
-            setFile(
-              e.target.files[0]
-            )
-          }
-        />
+      <div className="dashboard-grid">
+        <div className="card">
+          <h2>Audio Input</h2>
 
-        <div className="button-group">
-          <button
-            onClick={
-              handleUpload
+          <input
+            type="file"
+            accept="audio/*"
+            onChange={(e) =>
+              setFile(
+                e.target.files[0]
+              )
             }
-            disabled={loading}
-          >
-            {loading
-              ? "Uploading..."
-              : "Upload & Transcribe"}
-          </button>
+          />
 
-          {!recording ? (
+          <div className="button-row">
             <button
               onClick={
-                startRecording
+                handleUpload
               }
             >
-              🎙 Start Recording
+              Upload Audio
             </button>
-          ) : (
-            <button
-              onClick={
-                stopRecording
-              }
-            >
-              ⏹ Stop Recording
-            </button>
-          )}
+
+            {!recording ? (
+              <button
+                onClick={
+                  startRecording
+                }
+              >
+                Start Recording
+              </button>
+            ) : (
+              <button
+                onClick={
+                  stopRecording
+                }
+              >
+                Stop Recording
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="current-box">
+        <div className="card">
           <h2>
-            Current
-            Transcription
+            Latest Transcription
           </h2>
 
-          <p>
+          <div className="transcript-box">
             {transcript ||
-              "No transcription yet"}
-          </p>
+              "Your transcription will appear here."}
+          </div>
         </div>
       </div>
 
-      <div className="history-box">
-        <div className="history-header">
-          <h2>
-            📜 Previous
-            Transcriptions
-          </h2>
+      <div className="history-card">
+        <div className="history-top">
+          <div>
+            <h2>
+              Transcription
+              History
+            </h2>
+
+            <p>
+              Your private
+              transcription
+              records
+            </p>
+          </div>
 
           <button
             onClick={
               clearHistory
             }
           >
-            🗑 Clear History
+            Clear History
           </button>
         </div>
 
@@ -430,7 +498,7 @@ function App() {
           0 ? (
             <p>
               No transcriptions
-              found
+              yet.
             </p>
           ) : (
             allTranscriptions.map(
